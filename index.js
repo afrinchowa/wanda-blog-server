@@ -2,7 +2,7 @@ const express = require("express");
 const app = express();
 const cors = require("cors");
 require("dotenv").config();
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 const port = process.env.PORT || 5000;
 app.use(cors());
@@ -30,12 +30,35 @@ async function run() {
     const database = client.db("wandaBlog");
     const blogCollection = database.collection("blog");
     const userCollection = client.db("wandaBlog").collection("users");
+    // uses items
 
+    app.get("/users", async (req, res) => {
+      const cursor = userCollection.find();
+      const result = await cursor.toArray();
+      res.send(result);
+    });
     app.post("/users", async (req, res) => {
       const newUser = req.body;
-
       console.log("creating new user", newUser);
-      const result = await userCollection.insertOne(newUser)
+      const result = await userCollection.insertOne(newUser);
+    });
+    app.patch("/users/:email", async (req, res) => {
+      const email = req.params.email;
+      const filter = { email };
+      const updatedDoc = {
+        $set: {
+          lastSignInTime: req.body?.lastSignInTime,
+        },
+      };
+      const result = await userCollection.updateOne(filter, updatedDoc);
+      res.send(result);
+    });
+
+    app.delete("/users/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await userCollection.deleteOne(query);
+      res.send(result);
     });
   } finally {
     // Ensures that the client will close when you finish/error
